@@ -1,0 +1,74 @@
+getprop("ro.product.device") == "reys" || abort("E3004: This package is for \"reys\" devices; this is a \"" + getprop("ro.product.device") + "\".");
+ui_print(" ");
+ui_print("***********************************************");
+ui_print("              UPDATER SCRIPT ORNEGI            ");
+ui_print("               AZAT BARIŞ MIZRAKLI             ");
+ui_print("***********************************************");
+ui_print(" ");
+show_progress(1.900000,0);
+ui_print(" BAĞLANTILAR KESILIYOR SYSTEM , CACHE, CUST");
+set_progress(0.100000);
+ifelse(is_mounted("/system"), unmount("/system"));
+ifelse(is_mounted("/cache"), unmount("/cache"));
+ifelse(is_mounted("/cust"), unmount("/cust"));
+
+ui_print(" BAĞLANIYOR SYSTEM , CACHE, CUST");
+set_progress(0.200000);
+mount("ext4", "EMMC", "/dev/block/bootdevice/by-name/system", "/system", "max_batch_time=0,commit=1,data=ordered,barrier=1,errors=panic,nodelalloc");
+mount("ext4", "EMMC", "/dev/block/bootdevice/by-name/cache", "/cache", "max_batch_time=0,commit=1,data=ordered,barrier=1,errors=panic,nodelalloc");
+mount("ext4", "EMMC", "/dev/block/bootdevice/by-name/cust", "/cust", "max_batch_time=0,commit=1,data=ordered,barrier=1,errors=panic,nodelalloc");
+
+ui_print("SYSTEM CACHE CUST DALVIK CACHE FORMATLANIYOR");
+set_progress(0.400000);
+format("ext4", "EMMC", "/dev/block/bootdevice/by-name/system", "0", "/system");
+format("ext4", "EMMC", "/dev/block/bootdevice/by-name/cache", "0", "/cache");
+format("ext4", "EMMC", "/dev/block/bootdevice/by-name/cust", "0", "/cust");
+
+ui_print("SYSTEM ADLI KLASORDEKİLER /system'e çıkartılıyor.");
+set_progress(0.700000);
+package_extract_dir("system", "/system") || abort("Failed to extract dir from \"system\" to \"/system\".");
+
+
+
+ui_print("CUST ADLI KLASORDEKİLER /cust'a çıkartılıyor");
+set_progress(1.100000);
+package_extract_dir("cust", "/cust") || abort("Failed to extract dir from \"cust\" to \"/cust\".");
+
+ui_print("BOOT.IMG ÇIKARTILIYOR");
+set_progress(1.200000);
+package_extract_file("boot.img", "/dev/block/bootdevice/by-name/boot");
+
+# YORUM SATIRI  : AŞAĞIDAKİ DOSYALAR BELİRTİLEN YERLERE ÇIKARTILIYOR
+
+ui_print("- Patching firmware images...");
+ifelse(msm.boot_update("main"), (
+package_extract_file("firmware-update/cmnlib64.mbn", "/dev/block/bootdevice/by-name/cmnlib64");
+package_extract_file("firmware-update/splash.img", "/dev/block/bootdevice/by-name/splash");
+package_extract_file("firmware-update/cmnlib.mbn", "/dev/block/bootdevice/by-name/cmnlib");
+package_extract_file("firmware-update/rpm.mbn", "/dev/block/bootdevice/by-name/rpm");
+package_extract_file("firmware-update/tz.mbn", "/dev/block/bootdevice/by-name/tz");
+package_extract_file("firmware-update/mdtp.img", "/dev/block/bootdevice/by-name/mdtp");
+package_extract_file("firmware-update/emmc_appsboot.mbn", "/dev/block/bootdevice/by-name/aboot");
+package_extract_file("firmware-update/lksecapp.mbn", "/dev/block/bootdevice/by-name/lksecapp");
+package_extract_file("firmware-update/sbl1.mbn", "/dev/block/bootdevice/by-name/sbl1");
+package_extract_file("firmware-update/devcfg.mbn", "/dev/block/bootdevice/by-name/devcfg");
+package_extract_file("firmware-update/keymaster.mbn", "/dev/block/bootdevice/by-name/keymaster");
+), "");
+ifelse(msm.boot_update("backup"), (
+package_extract_file("firmware-update/cmnlib64.mbn", "/dev/block/bootdevice/by-name/cmnlib64bak");
+package_extract_file("firmware-update/cmnlib.mbn", "/dev/block/bootdevice/by-name/cmnlibbak");
+package_extract_file("firmware-update/rpm.mbn", "/dev/block/bootdevice/by-name/rpmbak");
+package_extract_file("firmware-update/tz.mbn", "/dev/block/bootdevice/by-name/tzbak");
+package_extract_file("firmware-update/emmc_appsboot.mbn", "/dev/block/bootdevice/by-name/abootbak");
+package_extract_file("firmware-update/lksecapp.mbn", "/dev/block/bootdevice/by-name/lksecappbak");
+package_extract_file("firmware-update/sbl1.mbn", "/dev/block/bootdevice/by-name/sbl1bak");
+package_extract_file("firmware-update/devcfg.mbn", "/dev/block/bootdevice/by-name/devcfgbak");
+package_extract_file("firmware-update/keymaster.mbn", "/dev/block/bootdevice/by-name/keymasterbak");
+), "");
+msm.boot_update("finalize");
+package_extract_file("firmware-update/NON-HLOS.bin", "/dev/block/bootdevice/by-name/modem");
+package_extract_file("firmware-update/adspso.bin", "/dev/block/bootdevice/by-name/dsp");
+
+
+
+ui_print("YUKLEME TAMAMLANDI");
